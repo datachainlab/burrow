@@ -69,17 +69,19 @@ func ecrecover(ctx Context) ([]byte, error) {
 	// bytes:  [  32  |  32  |  1  ]
 	hash := ctx.Input[:32]
 
-	const compactSigLength = 2*binary.Word256Bytes + 1
-	sig := make([]byte, compactSigLength)
-	// Copy in r, s
-	copy(sig, ctx.Input[2*binary.Word256Bytes:4*binary.Word256Bytes])
 	// Check v is single byte
 	v := ctx.Input[binary.Word256Bytes : 2*binary.Word256Bytes]
 	if !binary.IsZeros(v[:len(v)-1]) {
 		return nil, fmt.Errorf("ecrecover: recovery ID is larger than one byte")
 	}
-	// Copy in v to last element of sig
-	sig[2*binary.Word256Bytes] = v[len(v)-1]
+
+	const compactSigLength = 2*binary.Word256Bytes + 1
+	sig := make([]byte, compactSigLength)
+	// Copy in v to first element of sig
+	sig[0] = v[len(v)-1]
+
+	// Copy in r, s
+	copy(sig[1:], ctx.Input[2*binary.Word256Bytes:4*binary.Word256Bytes])
 
 	publicKey, isCompressed, err := btcec.RecoverCompact(btcec.S256(), sig, hash)
 	if err != nil {
